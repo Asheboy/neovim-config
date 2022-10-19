@@ -200,17 +200,40 @@ function M.setup()
         local luasnip = require('luasnip')
         lsp.preset('recommended')
 
+        local lsp_formatting = function(bufnr)
+          vim.lsp.buf.format({
+            filter = function(client)
+              -- apply whatever logic you want (in this example, we'll only use null-ls)
+              return client.name == "null-ls"
+            end,
+            bufnr = bufnr,
+          })
+        end
+        local augroup = vim.api.nvim_create_augroup("LspFormatting", {})
+
         local null_ls = require('null-ls')
         local null_opts = lsp.build_options('null-ls', {
-          on_attach = function(client)
-            if client.resolved_capabilities.document_formatting then
+          on_attach = function(client, bufnr)
+            if client.supports_method("textDocument/formatting") then
+              vim.api.nvim_clear_autocmds({ group = augroup, buffer = bufnr })
               vim.api.nvim_create_autocmd("BufWritePre", {
-                desc = "Auto format before save",
-                pattern = "<buffer>",
-                callback = vim.lsp.buf.formatting_sync,
+                group = augroup,
+                buffer = bufnr,
+                callback = function()
+                  lsp_formatting(bufnr)
+                end,
               })
             end
           end
+            -- if client.resolved_capabilities.document_formatting then
+            --   vim.api.nvim_create_autocmd("BufWritePre", {
+            --     desc = "Auto format before save",
+            --     pattern = "<buffer>",
+            --     callback = function()
+            --       lsp_formatting(bufnr)
+            --     end,
+            --    })
+            -- end
         })
 
         null_ls.setup({
