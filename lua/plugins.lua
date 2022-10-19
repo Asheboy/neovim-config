@@ -113,15 +113,6 @@ function M.setup()
       end,
     }
 
-    -- Easy motion
-    use {
-      "ggandor/lightspeed.nvim",
-      keys = { "s", "S", "f", "F", "t", "T" },
-      config = function()
-        require("lightspeed").setup {}
-      end,
-    }
-
     -- Markdown
     use {
       "iamcco/markdown-preview.nvim",
@@ -210,7 +201,17 @@ function M.setup()
         lsp.preset('recommended')
 
         local null_ls = require('null-ls')
-        local null_opts = lsp.build_options('null-ls', {})
+        local null_opts = lsp.build_options('null-ls', {
+          on_attach = function(client)
+            if client.resolved_capabilities.document_formatting then
+              vim.api.nvim_create_autocmd("BufWritePre", {
+                desc = "Auto format before save",
+                pattern = "<buffer>",
+                callback = vim.lsp.buf.formatting_sync,
+              })
+            end
+          end
+        })
 
         null_ls.setup({
           on_attach = null_opts.on_attach,
@@ -273,9 +274,19 @@ function M.setup()
       requires = "kyazdani42/nvim-web-devicons",
       config = function()
         require("trouble").setup {
-        }
+      }
       end
     }
+
+    use {
+      'nvim-treesitter/nvim-treesitter',
+      run = function() pcall(vim.cmd, 'TSUpdate') end,
+			config = function()
+				require('config.treesitter').setup()
+			end,
+    }
+    
+    use { 'nvim-treesitter/nvim-treesitter-textobjects' }
 
     use {
         "ThePrimeagen/refactoring.nvim",
@@ -294,7 +305,16 @@ function M.setup()
       end
     }
 
-    -- use { 'm4xshen/autoclose.nvim' }
+    use { 'wellle/targets.vim' }
+
+    use { 'tpope/vim-surround' }
+
+    use { 'tpope/vim-fugitive' }
+
+    use { 'tpope/vim-repeat' }
+
+    use { 'editorconfig/editorconfig-vim' }
+
 
     if packer_bootstrap then
       print "Restart Neovim required after installation!"
